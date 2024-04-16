@@ -11,12 +11,7 @@ before:
 # .goreleaser.yaml
 builds:
   # You can have multiple builds defined as a yaml list
-  - #
-    # Path to main.go file or main package.
-    # Notice: when used with `gomod.proxy`, this must be a package.
-    #
-    # Default is `.`.
-    main: ./cmd/norn-cli.go
+  - main: ./cmd/norn-cli.go
 
     # Binary name.
     # Can be a path (e.g. `bin/app`) to wrap the binary in a directory.
@@ -39,7 +34,7 @@ builds:
     # Templates: allowed (since v1.14)
     env:
       - CGO_ENABLED=0
-   goos:
+    goos:
       - linux
       - windows
 
