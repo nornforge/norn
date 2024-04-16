@@ -25,13 +25,13 @@ import (
 
 func serverCommand(cmd *cobra.Command, args []string) error {
 	conf := server.ServerConfig{
-		Host: "localhost",
-		Port: 8080,
+		BindAddress: "localhost",
+		Port:        8080,
 	}
 
 	var err error = nil
 
-	conf.Host, err = cmd.Flags().GetString("host")
+	conf.BindAddress, err = cmd.Flags().GetString("bind")
 	if err != nil {
 		return err
 	}

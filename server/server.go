@@ -21,7 +21,7 @@ import (
 
 // A ServerConfig holds all information required to serve the REST API
 type ServerConfig struct {
-	Host          string
+	BindAddress   string
 	Port          uint16
 	maxChannel    int
 	deviceVersion versionInfo
@@ -264,7 +264,7 @@ func Serve(server *ServerConfig) error {
 		return err
 	}
 	s := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", server.Host, server.Port),
+		Addr:         fmt.Sprintf("%s:%d", server.BindAddress, server.Port),
 		Handler:      newMux(server),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
