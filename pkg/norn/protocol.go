@@ -112,7 +112,6 @@ func (command *Command) Marshal() []byte {
 	payload := string(msg)
 	crcPayload := fmt.Sprintf("%08x", crc32.Checksum(msg, crc32c))
 	data := fmt.Sprintf("%s%s#%s%s%s", string(marker), length, crcLength, payload, crcPayload)
-	fmt.Println(data)
 	return []byte(data)
 }
 
