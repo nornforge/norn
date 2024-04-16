@@ -12,7 +12,7 @@ import (
 
 func TestGetCommand(t *testing.T) {
 	var channelToTest uint = 1
-	inputData := fmt.Sprintf("000000037:{\"channel\":%d,\"type\":1,\"status\":false}", channelToTest)
+	inputData := fmt.Sprintf("E979#000000037#e2da8fab{\"channel\":%d,\"type\":1,\"status\":false}ba9f13b7", channelToTest)
 	command := norn.Command{}
 	reader := bufio.NewReader(strings.NewReader(inputData))
 	err := command.Parse(reader)
@@ -21,7 +21,7 @@ func TestGetCommand(t *testing.T) {
 	require.Equal(t, channelToTest, command.Channel)
 
 	channelToTest = 8
-	inputData = fmt.Sprintf("000000037:{\"channel\":%d,\"type\":1,\"status\":false}", channelToTest)
+	inputData = fmt.Sprintf("E979#000000037#e2da8fab{\"channel\":%d,\"type\":1,\"status\":false}ffa9c131", channelToTest)
 	reader = bufio.NewReader(strings.NewReader(inputData))
 	err = command.Parse(reader)
 	require.Nil(t, err)
@@ -31,7 +31,7 @@ func TestGetCommand(t *testing.T) {
 
 func TestSetCommand(t *testing.T) {
 	var channelToTest uint = 1
-	inputData := fmt.Sprintf("000000037:{\"channel\":%d,\"type\":2,\"status\":false}", channelToTest)
+	inputData := fmt.Sprintf("E979#000000037#e2da8fab{\"channel\":%d,\"type\":2,\"status\":false}5ab27756", channelToTest)
 	command := norn.Command{}
 	reader := bufio.NewReader(strings.NewReader(inputData))
 	err := command.Parse(reader)
@@ -41,7 +41,7 @@ func TestSetCommand(t *testing.T) {
 	require.Equal(t, false, command.Status)
 
 	channelToTest = 8
-	inputData = fmt.Sprintf("000000036:{\"channel\":%d,\"type\":2,\"status\":true}", channelToTest)
+	inputData = fmt.Sprintf("E979#000000036#10b10ca8{\"channel\":%d,\"type\":2,\"status\":true}ef4039dc", channelToTest)
 	reader = bufio.NewReader(strings.NewReader(inputData))
 	err = command.Parse(reader)
 	require.Nil(t, err)
@@ -59,8 +59,8 @@ func TestInvalidCommand(t *testing.T) {
 }
 
 func TestMultipleCommand(t *testing.T) {
-	inputData := "000000037:{\"channel\":1,\"type\":1,\"status\":false}#BA9F13B7"
-	inputData += "000000037:{\"channel\":2,\"type\":1,\"status\":false}#CC6C9FA6"
+	inputData := "E979#000000037#e2da8fab{\"channel\":1,\"type\":1,\"status\":false}ba9f13b7"
+	inputData += "E979#000000037#e2da8fab{\"channel\":2,\"type\":1,\"status\":false}cc6c9fa6"
 	command := norn.Command{}
 	reader := bufio.NewReader(strings.NewReader(inputData))
 	err := command.Parse(reader)
@@ -76,7 +76,7 @@ func TestMultipleCommand(t *testing.T) {
 }
 
 func TestVersionCommand(t *testing.T) {
-	inputData := "000000037:{\"channel\":1,\"type\":3,\"status\":false}#0556AB09\r\n"
+	inputData := "E979#000000037#e2da8fab{\"channel\":1,\"type\":3,\"status\":false}0556AB09"
 	command := norn.Command{}
 	reader := bufio.NewReader(strings.NewReader(inputData))
 	err := command.Parse(reader)
