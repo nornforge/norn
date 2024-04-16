@@ -28,7 +28,7 @@ var bootCmd = &cobra.Command{
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		command := norn.Command{Type: norn.Bootloader}
-		portName, err := rootCmd.PersistentFlags().GetString("port")
+		portName, err := rootCmd.PersistentFlags().GetString("device")
 		if err != nil {
 			return err
 		}
