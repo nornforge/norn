@@ -1,0 +1,49 @@
+# .goreleaser.yaml
+builds:
+  # You can have multiple builds defined as a yaml list
+  - #
+    # Path to main.go file or main package.
+    # Notice: when used with `gomod.proxy`, this must be a package.
+    #
+    # Default is `.`.
+    main: ./cmd/norn-cli.go
+
+    # Binary name.
+    # Can be a path (e.g. `bin/app`) to wrap the binary in a directory.
+    #
+    # Default: Project directory name
+    binary: norn
+
+    # Custom ldflags.
+    #
+    # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+    # Templates: allowed
+    ldflags:
+      - -s -w -X main.build={{.Version}}
+
+    # Custom environment variables to be set during the builds.
+    # Invalid environment variables will be ignored.
+    #
+    # Default: os.Environ() ++ env config section
+    # Templates: allowed (since v1.14)
+    env:
+      - CGO_ENABLED=0
+   goos:
+      - linux
+      - windows
+
+    goarch:
+      - amd64
+      - arm64
+
+    # List of combinations of GOOS + GOARCH + GOARM to ignore.
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+    # Set the modified timestamp on the output binary, typically
+    # you would do this to ensure a build was reproducible.
+    # Pass an empty string to skip modifying the output.
+    #
+    # Templates: allowed
+    mod_timestamp: "{{ .CommitTimestamp }}"
