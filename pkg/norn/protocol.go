@@ -63,7 +63,7 @@ func protocolParser(reader *bufio.Reader) ([]byte, error) {
 	lengthBuffer = strings.TrimSuffix(lengthBuffer, "#")
 	mumPrefixBytes := len(lengthBuffer)
 	if mumPrefixBytes != prefixLength {
-		return nil, fmt.Errorf("invalid prefix length: %d expected: %d", len(lengthBuffer), prefixLength)
+		return nil, fmt.Errorf("invalid prefix length: %d expected: %d, buffer: %s", len(lengthBuffer), prefixLength, lengthBuffer)
 	}
 
 	crcBuffer := make([]byte, 8)
@@ -112,14 +112,14 @@ func (command *Command) Marshal() []byte {
 	payload := string(msg)
 	crcPayload := fmt.Sprintf("%08x", crc32.Checksum(msg, crc32c))
 	data := fmt.Sprintf("%s%s#%s%s%s", string(marker), length, crcLength, payload, crcPayload)
-
+	fmt.Println(data)
 	return []byte(data)
 }
 
 func (command *Command) Parse(reader *bufio.Reader) error {
 	data, err := protocolParser(reader)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while command parsing: %w", err)
 	}
 	return json.Unmarshal(data, command)
 }
@@ -138,14 +138,14 @@ func (response *Response) Marshal() []byte {
 	crcString := fmt.Sprintf("%08x", crc32.Checksum([]byte(length), crc32c))
 	payload := string(msg)
 	crcPayload := fmt.Sprintf("%08x", crc32.Checksum(msg, crc32c))
-	data := fmt.Sprintf("%s%s#%s%s%s", string(marker), crcString, length, payload, crcPayload)
+	data := fmt.Sprintf("%s%s#%s%s%s", string(marker), length, crcString, payload, crcPayload)
 	return []byte(data)
 }
 
 func (response *Response) Parse(reader *bufio.Reader) error {
 	data, err := protocolParser(reader)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while response parsing: %w", err)
 	}
 	return json.Unmarshal(data, response)
 }

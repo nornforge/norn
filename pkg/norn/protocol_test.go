@@ -83,3 +83,15 @@ func TestVersionCommand(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, norn.Version, command.Type)
 }
+
+// TestResponse is a unit test for the Response.Parse method.
+func TestResponse(t *testing.T) {
+	err := fmt.Errorf("Test")
+	inputData := norn.MarshalError(err)
+	reader := bufio.NewReader(strings.NewReader(inputData))
+	response := norn.Response{}
+	err = response.Parse(reader)
+	require.Nil(t, err)
+	require.Equal(t, response.Message, "Test")
+	require.Equal(t, response.Success, false)
+}
