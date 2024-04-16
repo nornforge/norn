@@ -1,5 +1,12 @@
 # Controlling Relays from Go
 
+
+
+[![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/nornforge/norn.svg)](https://github.com/nornforge/norn)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nornforge/norn.svg)](https://pkg.go.dev/github.com/nornforge/norn)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![example workflow](https://github.com/nornforge/norn/actions/workflows/go.yml/badge.svg)
+
 This pure Go implementation allows one to control the outputs off the [Waveshare Pico Relay B](https://www.waveshare.com/wiki/Pico-Relay-B)
 
 ![Waveshare Pico Relay B](doc/assets/waveshare-pico-relay-b.jpg)
