@@ -11,19 +11,12 @@ Sometimes control is needed. This project aims to provide control over the eight
 
 ## Firmware
 
-It looks like flashing from the dev Container is not supported, so I build the binary and manually copy it onto the Raspberry Pi Pico
-
-
-### Build
-
-```
-$ tinygo build -size short -o firmware.uf2 -target=pico ./firmware
-```
+The firmware can be found in the separate [firmware](https://github.com/nornforge/firmware) repository.
 
 ## CLI
 
 ```
-$ go build -o pico-relay ./cli
+$ go build -o norn ./cmd/norn-cli.go
 ```
 
 ## REST API v1
