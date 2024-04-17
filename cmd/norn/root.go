@@ -21,10 +21,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// getEnv retrieves the value of the environment variable specified by the key.
+// If the environment variable is not found, it returns the fallback value.
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+// serialDevice represents the serial port used by the NORN application.
+var serialDevice = getEnv("NORN_SERIAL_PORT", "/dev/ttyACM0")
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "norn",
-	Short: "A CLI to control the relays connected through a microcontroller running the norn firmware",
+	Short: "A CLI to control the relays connected through a microcontroller running the Norn firmware",
+	Long: `In a set-up with multiple serial devices it might come handy to predefine the 
+environment variable NORN_SERIAL_PORT, so the serial port does not need to be provided every call.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
@@ -44,7 +58,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringP("device", "d", "/dev/ttyACM0", "The serial device used for communication")
+	rootCmd.PersistentFlags().StringP("device", "d", serialDevice, "The serial device used for communication")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
