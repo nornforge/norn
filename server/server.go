@@ -42,9 +42,12 @@ type deviceInfo struct {
 // A versionInfo contains all information about a specific components version.
 // This is part of the JSON v2 API
 type versionInfo struct {
-	Major uint `json:"major"`
-	Minor uint `json:"minor"`
-	Patch uint `json:"patch"`
+	Major      uint64 `json:"major"`
+	Minor      uint64 `json:"minor"`
+	Patch      uint64 `json:"patch"`
+	PreRelease string `json:"prerelease"`
+	MetaData   string `json:"metadata"`
+	String     string `json:"string"`
 }
 
 // A channelInfo contains all information about the device output channels.
@@ -108,12 +111,16 @@ func (serv *ServerConfig) readRelayHandler(w http.ResponseWriter, r *http.Reques
 
 // info provides the information about the device and the service to the caller
 func (serv *ServerConfig) info(w http.ResponseWriter, r *http.Request) {
+	version := version.GetProgramVersion()
 	response := info{
 		Server: serverInfo{
 			Version: versionInfo{
-				Major: version.Major,
-				Minor: version.Minor,
-				Patch: version.Patch,
+				Major:      version.Major(),
+				Minor:      version.Minor(),
+				Patch:      version.Patch(),
+				MetaData:   version.Metadata(),
+				PreRelease: version.Prerelease(),
+				String:     version.String(),
 			},
 		},
 		Device: deviceInfo{

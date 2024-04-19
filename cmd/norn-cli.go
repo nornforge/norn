@@ -15,7 +15,9 @@ limitations under the License.
 */
 package main
 
-import cmd "github.com/nornforge/norn/cmd/norn"
+import (
+	cmd "github.com/nornforge/norn/cmd/norn"
+)
 
 func main() {
 	cmd.Execute()

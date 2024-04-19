@@ -1,7 +1,11 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: Go
+name: 🔨 Build Go
+
+env:
+  VERSION_FROM_GIT: v0.0.1-devel
+  CGO_ENABLED: 0
 
 on:
   push:
@@ -21,8 +25,20 @@ jobs:
       with:
         go-version: '1.22'
 
+    - name: 🔖 Get the version
+      run: echo "VERSION_FROM_GIT=$(git describe --tags)" >> "$GITHUB_ENV"
+
     - name: 👷 Build the norn cli
-      run: go build -o norn ./cmd/norn-cli.go
+      run: |
+      go build -o norn \
+               -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" \
+               ./cmd/norn-cli.go
 
     - name: 🧪 Test
       run: go test -v ./...
+
+    - name: ✅ Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: norn-$VERSION_FROM_GIT
+        path: norn

@@ -58,7 +58,8 @@ var versionCmd = &cobra.Command{
 		if !response.Success {
 			return fmt.Errorf(response.Message)
 		}
-		fmt.Printf("Program Version : %s\n", version.ProgramVersion)
+		version := version.GetProgramVersion()
+		fmt.Printf("Program Version : v%s\n", version.String())
 		fmt.Printf("Device Version  : %s\n", response.Message)
 		return nil
 	},

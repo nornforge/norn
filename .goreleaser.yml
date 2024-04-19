@@ -25,7 +25,7 @@ builds:
     # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
     # Templates: allowed
     ldflags:
-      - -s -w -X main.build={{.Version}}
+      - -s -w -X github.com/nornforge/norn/version.VersionInput={{.Version}}
 
     # Custom environment variables to be set during the builds.
     # Invalid environment variables will be ignored.
