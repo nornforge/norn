@@ -35,7 +35,12 @@ jobs:
       run: |
         go build -o norn \
                  -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" \
-                 ./cmd/norn-cli.go
+                 ./cmd/cli
+    - name: 👷 Build the norn client
+      run: |
+        go build -o norn-client \
+                 -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" \
+                 ./cmd/client
 
     - name: 🧪 Test
       run: go test -v ./...
@@ -44,4 +49,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: norn-${{env.VERSION_FROM_GIT}}
-        path: norn
+        path: |
+          norn
+          norn-client
