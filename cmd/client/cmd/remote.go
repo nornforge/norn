@@ -26,8 +26,7 @@ func (r *Remote) SendRequest(channel uint, payload []byte) error {
 	url := fmt.Sprintf("%s/api/v1/relay/%d/value", r.url, channel)
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(payload))
 	if err != nil {
-		fmt.Errorf("Error creating request: %w", err)
-		return err
+		return fmt.Errorf("error creating request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	client := &http.Client{}
