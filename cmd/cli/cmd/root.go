@@ -37,23 +37,23 @@ var serialDevice = getEnv("NORN_SERIAL_PORT", "/dev/ttyACM0")
 var rootCmd = &cobra.Command{
 	Use:   "norn",
 	Short: "A CLI to control the relays connected through a Microcontroller running the Norn firmware",
-	Long: `A CLI to control the relays connected through a Microcontroller running the Norn firmware
+	Long: `A CLI to control the relays connected through a Microcontroller running the Norn firmware.
 
-The norn CLI can be used to test the connection to the device and can also act 
+The norn CLI can be used to test the connection to the device and can also act
+as a server which works as a proxy to the relays.
 
+The recommended way of controlling the switches is by using the norn-client.
+This handles concurrent access and can also be used on a gateway PC.
 
 Note:
-  In a set-up with multiple serial devices it might come handy to predefine the 
+  In a setup with multiple serial devices, it might come in handy to predefine the 
   environment variable NORN_SERIAL_PORT, so the serial port does not need to be 
-  provided to every call of the cli.
+  provided for every call of the CLI.
 
 Environment Variables:
-  NORN_SERIAL_PORT: Define the default serial port to be used
+  NORN_SERIAL_PORT: Defines the default serial port to be used.
 
 `,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
