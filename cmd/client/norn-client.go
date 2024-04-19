@@ -16,7 +16,7 @@ limitations under the License.
 package main
 
 import (
-	cmd "github.com/nornforge/norn/cmd/norn"
+	cmd "github.com/nornforge/norn/cmd/client/cmd"
 )
 
 func main() {
