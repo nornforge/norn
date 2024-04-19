@@ -30,7 +30,7 @@ jobs:
 
     - name: 👷 Build the norn cli
       run: |
-      go build -o norn -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" ./cmd/norn-cli.go
+        go build -o norn -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" ./cmd/norn-cli.go
 
     - name: 🧪 Test
       run: go test -v ./...
