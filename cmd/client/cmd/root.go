@@ -35,9 +35,9 @@ var nornServerURL = getEnv("NORN_URL", "http://localhost:8080")
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "norn",
+	Use:   "norn-client",
 	Short: "A CLI to control the relays connected to a Norn Server",
-	Long: `A CLI to control the relays attached to a norn server
+	Long: `A CLI to control the relays attached to a Norn server
 `,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
