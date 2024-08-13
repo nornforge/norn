@@ -1,4 +1,6 @@
 
+version: 2
+
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
 before:
@@ -8,10 +10,14 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 
-# Include additional files in the release
-files:
-  - source: scripts/systemd/norn.service
-    destination: etc/systemd/system
+archives:
+  - #
+    # Include additional files in the release
+    files:
+      - README.md
+      - LICENSE
+      - src: scripts/systemd/norn.service
+        dst: etc/systemd/system
 
 # .goreleaser.yaml
 builds:
