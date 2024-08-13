@@ -3,7 +3,7 @@
 
 # Installation of the Systemd service file
 
-Please copy the file provided in [scripts/systemd/norn.service](scripts/systemd/norn.service) to `/etc/systemd/system/norn.service` by using the `sudo` command.
+Please copy the file provided in [scripts/systemd/norn.service](/scripts/systemd/norn.service) to `/etc/systemd/system/norn.service` by using the `sudo` command.
 
 ```sh
 sudo cp scripts/systemd/norn.service /etc/systemd/system/norn.service
@@ -12,7 +12,7 @@ sudo cp scripts/systemd/norn.service /etc/systemd/system/norn.service
 
 ## Serial port definition
 
-As mentioned in the [serial port documentation](doc/serialport.md) it is recommended to use the serial by path approach to clearly identify the correct serial port. To allow the systemd service file to be independent of the serial configuration the recommended way is to use environment variables.
+As mentioned in the [serial port documentation](/doc/serialport.md) it is recommended to use the serial by path approach to clearly identify the correct serial port. To allow the systemd service file to be independent of the serial configuration the recommended way is to use environment variables.
 
 
 ```sh
@@ -26,7 +26,7 @@ sudo EDITOR=vim systemctl edit norn
 ```
 
 
-This uses the system editor to manipulate the file. Use the serial port you have figured out based on the information from the [serial port documentation](doc/serialport.md).
+This uses the system editor to manipulate the file. Use the serial port you have figured out based on the information from the [serial port documentation](/doc/serialport.md).
 
 ```sh
 ls /dev/serial/by-path/pci-0000\:00\:14.0-usb-0\:7.1\:1.0 -al
