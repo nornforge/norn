@@ -8,6 +8,11 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 
+# Include additional files in the release
+files:
+  - source: scripts/systemd/norn.service
+    destination: etc/systemd/system
+
 # .goreleaser.yaml
 builds:
   # You can have multiple builds defined as a yaml list
@@ -36,16 +41,11 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
 
     goarch:
       - amd64
       - arm64
 
-    # List of combinations of GOOS + GOARCH + GOARM to ignore.
-    ignore:
-      - goos: windows
-        goarch: arm64
 
     # Set the modified timestamp on the output binary, typically
     # you would do this to ensure a build was reproducible.
