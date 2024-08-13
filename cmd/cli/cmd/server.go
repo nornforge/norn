@@ -45,6 +45,9 @@ func serverCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("Opening serial device: ", serialPortName)
+
 	mode := &serial.Mode{
 		BaudRate: 115200,
 		Parity:   serial.NoParity,

@@ -1,0 +1,16 @@
+[Unit]
+Description=Control daemon for the Norn service
+
+[Service]
+ExecStart=/usr/local/bin/norn server
+Type=simple
+DynamicUser=yes
+# This is required due to the fact the default group for the serial interface is `dialout`
+Group=dialout
+StateDirectory=norn
+ProtectHome=true
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
+
