@@ -100,6 +100,10 @@ curl -s http://127.0.0.1:8080/api/v2/info | jq
 The curl command line option `-s` is to suppress the download status information. We also pipe the output to jq for a better readability.
 
 
+## Systemd activation
+
+In case you are satisfied with the results you can run the `norn` server as a systemd service. The details are described in the [docs](doc/systemd.md)
+
 ## License
 
 This software is licensed under the [Apache License Version 2.0](LICENSE)
