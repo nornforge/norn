@@ -235,7 +235,9 @@ func (serv *ServerConfig) execute(cmd norn.Command) (norn.Response, error) {
 	resp := norn.Response{
 		Success: false,
 	}
-	serv.SerialDevice.Write(cmd.Marshal())
+	if _, err := serv.SerialDevice.Write(cmd.Marshal()); err != nil {
+		return resp, fmt.Errorf("error while sending the command to the hardware: %w", err)
+	}
 	reader := bufio.NewReader(serv.SerialDevice)
 	if err := resp.Parse(reader); err != nil {
 		return resp, fmt.Errorf("error while parsing the response from the hardware: %w", err)

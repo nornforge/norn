@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -33,6 +34,8 @@ type fakeDevice struct {
 	// garbleNext makes the device answer the next command with bytes that
 	// are not a valid frame.
 	garbleNext bool
+	// failWrite makes the next write to the device fail with this error.
+	failWrite error
 }
 
 func newFakeDevice(numChannels int, version string) *fakeDevice {
@@ -43,6 +46,11 @@ func (d *fakeDevice) Write(p []byte) (int, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
+	if d.failWrite != nil {
+		err := d.failWrite
+		d.failWrite = nil
+		return 0, err
+	}
 	command := norn.Command{}
 	if err := command.Parse(bufio.NewReader(bytes.NewReader(p))); err != nil {
 		return 0, err
@@ -250,6 +258,27 @@ func TestAResponseThatIsNotAValidFrameIsReported(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, status, method)
 		// The reason must reach the caller instead of an empty message
 		require.Contains(t, body, "invalid marker", method)
+	}
+}
+
+func TestAFailedWriteToTheDeviceIsReported(t *testing.T) {
+	for _, method := range []string{http.MethodGet, http.MethodPut} {
+		device := newFakeDevice(8, "v1.2.3")
+		server := startServer(t, device)
+		before := device.numCommands()
+
+		device.mutex.Lock()
+		device.failWrite = errors.New("port has been unplugged")
+		device.mutex.Unlock()
+
+		status, body := request(t, method, relayURL(server, "1"), "1")
+		require.Equal(t, http.StatusBadRequest, status, method)
+		// The I/O error must reach the caller, not a parse error that follows from it
+		require.Contains(t, body, "error while sending the command", method)
+		require.Contains(t, body, "port has been unplugged", method)
+		require.NotContains(t, body, "parsing", method)
+		require.Equal(t, before, device.numCommands(), "commands that reached the device")
+		require.False(t, device.channel(1), method)
 	}
 }
 
