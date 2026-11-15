@@ -268,7 +268,11 @@ func (serv *ServerConfig) execute(cmd norn.Command) (norn.Response, error) {
 	if _, err := serv.SerialDevice.Write(cmd.Marshal()); err != nil {
 		return resp, fmt.Errorf("error while sending the command to the hardware: %w", err)
 	}
-	reader := bufio.NewReader(newDeadlineReader(serv.SerialDevice, serv.timeout()))
+	timeout := serv.Timeout
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	reader := bufio.NewReader(newDeadlineReader(serv.SerialDevice, timeout))
 	if err := resp.Parse(reader); err != nil {
 		return resp, fmt.Errorf("error while parsing the response from the hardware: %w", err)
 	}
