@@ -106,13 +106,14 @@ In case you are satisfied with the results you can run the `norn` server as a sy
 
 ## Releases
 
-Pushing a version tag such as `v1.2.3` runs the tests and publishes a GitHub release with, for
-`linux_amd64` and `linux_arm64`:
+Pushing a version tag such as `v1.2.3` runs the tests and publishes a GitHub release.
+For each of `linux_amd64` and `linux_arm64` it contains:
 
 - `norn_<version>_linux_<arch>.tar.gz`, holding `norn`, `norn-client` and the systemd unit
 - `norn_<version>_linux_<arch>.tar.gz.cdx.json`, the software bill of materials (SBOM) of that archive in
   [CycloneDX](https://cyclonedx.org) format
-- `norn_<version>_checksums.txt`, the SHA-256 checksums of all files
+
+A single `norn_<version>_checksums.txt` holds the SHA-256 checksums of all files.
 
 Archives and SBOMs carry a signed [build provenance attestation](https://docs.github.com/en/actions/concepts/security/artifact-attestations).
 To check that an archive was built by this repository's release workflow, run
