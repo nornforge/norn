@@ -69,6 +69,9 @@ running `norn server`.
 The serial port defaults to `/dev/ttyACM0`. Select another one with `--device` or the environment
 variable `NORN_SERIAL_PORT`.
 
+On Linux, keep ModemManager from probing the device, and prefer a stable path to the serial port; both are
+described in [doc/serialport.md](doc/serialport.md).
+
 `norn on`, `off`, `get` and `brightness` give up with an error if the device does not respond within two
 seconds; `--timeout` changes that.
 
