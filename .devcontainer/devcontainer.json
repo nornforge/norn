@@ -1,29 +1,50 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/go
 {
-	"name": "Go",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/go:1.22",
+	"name": "Norn (Go)",
+	"image": "mcr.microsoft.com/devcontainers/go:2-1.27-trixie",
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		// Required by the claude-code feature: Debian's nodejs package ships without npm
+		"ghcr.io/devcontainers/features/node:1": {},
+		"ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+	},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	// Make sure the host directory exists, otherwise the bind mount fails
+	"initializeCommand": "mkdir -p \"${localEnv:HOME}/.claude\"",
+
+	// Share the Claude Code configuration and credentials with the host
+	"mounts": [
+		"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
+		// Keep the GitHub CLI login across container rebuilds
+		"source=gh-config-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
+		// Expose the host's device nodes, so a Pico plugged in (or re-enumerating
+		// after a reset) while the container is running shows up as /dev/ttyACM*
+		"source=/dev,target=/dev,type=bind"
+	],
+	// Allow access to USB CDC ACM serial devices (major 166), i.e. the Pico's USB serial port
+	"runArgs": [
+		"--device-cgroup-rule=c 166:* rwm"
+	],
+	"containerEnv": {
+		// Keeps .claude.json inside the mounted directory as well
+		"CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+	},
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "./.devcontainer/postCreateCommand.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
-		// Configure properties specific to VS Code.
 		"vscode": {
 			"extensions": [
 				"streetsidesoftware.code-spell-checker",
-				"golang.go"
+				"golang.go",
+				"anthropic.claude-code"
 			]
 		}
-	}
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	},
+
+	"remoteUser": "vscode"
 }
