@@ -34,6 +34,11 @@ func sendCommandOverSerial(command norn.Command) (norn.Response, error) {
 	if err != nil {
 		return response, err
 	}
+	// Data still waiting in the port, such as the late response to an
+	// earlier command, would be taken as the response to this one.
+	if err := port.ResetInputBuffer(); err != nil {
+		return response, fmt.Errorf("error while clearing the input of %s: %w", portName, err)
+	}
 	if _, err := port.Write(command.Marshal()); err != nil {
 		return response, fmt.Errorf("error while sending the command to %s: %w", portName, err)
 	}

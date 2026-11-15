@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/nornforge/norn/pkg/norn"
 	"github.com/stretchr/testify/require"
@@ -36,6 +37,14 @@ type fakeDevice struct {
 	garbleNext bool
 	// failWrite makes the next write to the device fail with this error.
 	failWrite error
+	// silentNext makes the device not answer the next command; its response
+	// is kept in late until deliverLate is called.
+	silentNext bool
+	late       []byte
+	// cutNext makes the device send only the first half of its next response.
+	cutNext     bool
+	readTimeout time.Duration
+	resets      int
 }
 
 func newFakeDevice(numChannels int, version string) *fakeDevice {
@@ -61,15 +70,56 @@ func (d *fakeDevice) Write(p []byte) (int, error) {
 		d.output.WriteString("panic: runtime error")
 		return len(p), nil
 	}
-	response := d.handle(command)
-	d.output.Write(response.Marshal())
+	handled := d.handle(command)
+	response := handled.Marshal()
+	switch {
+	case d.silentNext:
+		d.silentNext = false
+		d.late = response
+	case d.cutNext:
+		d.cutNext = false
+		d.output.Write(response[:len(response)/2])
+	default:
+		d.output.Write(response)
+	}
 	return len(p), nil
 }
 
+// Read behaves like a serial port with a read timeout: without data, it
+// returns no data and no error once the timeout has passed.
 func (d *fakeDevice) Read(p []byte) (int, error) {
 	d.mutex.Lock()
+	if d.output.Len() > 0 {
+		defer d.mutex.Unlock()
+		return d.output.Read(p)
+	}
+	wait := min(d.readTimeout, 5*time.Millisecond)
+	d.mutex.Unlock()
+	time.Sleep(wait)
+	return 0, nil
+}
+
+func (d *fakeDevice) SetReadTimeout(timeout time.Duration) error {
+	d.mutex.Lock()
 	defer d.mutex.Unlock()
-	return d.output.Read(p)
+	d.readTimeout = timeout
+	return nil
+}
+
+func (d *fakeDevice) ResetInputBuffer() error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.output.Reset()
+	d.resets++
+	return nil
+}
+
+// deliverLate sends the response the device held back for silentNext.
+func (d *fakeDevice) deliverLate() {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.output.Write(d.late)
+	d.late = nil
 }
 
 func (d *fakeDevice) handle(command norn.Command) norn.Response {
@@ -125,11 +175,14 @@ func (b *lockedBuffer) String() string {
 	return b.buffer.String()
 }
 
+// testTimeout is how long the server waits for the fake device in tests.
+const testTimeout = 200 * time.Millisecond
+
 // startServer returns a test server in front of a fake device, set up the
 // way Serve does it.
 func startServer(t *testing.T, device *fakeDevice) *httptest.Server {
 	t.Helper()
-	config := &ServerConfig{SerialDevice: device}
+	config := &ServerConfig{SerialDevice: device, Timeout: testTimeout}
 	require.NoError(t, config.getMaxChannels())
 	require.NoError(t, config.getDeviceVersion())
 	server := httptest.NewUnstartedServer(newMux(config))
@@ -348,4 +401,89 @@ func TestConcurrentRequestsAreSerialized(t *testing.T) {
 	for failure := range failures {
 		t.Error(failure)
 	}
+}
+
+func TestASilentDeviceTimesOut(t *testing.T) {
+	for _, method := range []string{http.MethodGet, http.MethodPut} {
+		device := newFakeDevice(8, "v1.2.3")
+		server := startServer(t, device)
+
+		device.mutex.Lock()
+		device.silentNext = true
+		device.mutex.Unlock()
+
+		start := time.Now()
+		status, body := request(t, method, relayURL(server, "1"), "1")
+		require.Equal(t, http.StatusBadRequest, status, method)
+		require.Contains(t, body, "no response from the device within 200ms", method)
+		require.Less(t, time.Since(start), 2*time.Second, method)
+
+		// The server is not stuck: the next request works again
+		status, _ = request(t, method, relayURL(server, "1"), "1")
+		require.Equal(t, http.StatusOK, status, method)
+	}
+}
+
+func TestAResponseThatStopsHalfwayTimesOut(t *testing.T) {
+	device := newFakeDevice(8, "v1.2.3")
+	server := startServer(t, device)
+
+	device.mutex.Lock()
+	device.cutNext = true
+	device.mutex.Unlock()
+
+	status, body := request(t, http.MethodGet, relayURL(server, "1"), "")
+	require.Equal(t, http.StatusBadRequest, status)
+	require.Contains(t, body, "no response from the device within", body)
+
+	status, body = request(t, http.MethodGet, relayURL(server, "1"), "")
+	require.Equal(t, http.StatusOK, status)
+	require.Equal(t, "0", body)
+}
+
+// A response that arrives after its request timed out must not be taken as
+// the response to the next request, or the server stays one response behind.
+func TestALateResponseIsNotTakenForTheNextOne(t *testing.T) {
+	device := newFakeDevice(8, "v1.2.3")
+	server := startServer(t, device)
+
+	status, _ := request(t, http.MethodPut, relayURL(server, "2"), "1")
+	require.Equal(t, http.StatusOK, status)
+
+	device.mutex.Lock()
+	device.silentNext = true
+	device.mutex.Unlock()
+	status, _ = request(t, http.MethodGet, relayURL(server, "2"), "")
+	require.Equal(t, http.StatusBadRequest, status)
+
+	device.deliverLate() // "relay 2 is on" arrives too late
+
+	for i := 0; i < 3; i++ {
+		status, body := request(t, http.MethodGet, relayURL(server, "1"), "")
+		require.Equal(t, http.StatusOK, status)
+		require.Equal(t, "0", body, "request %d", i)
+	}
+}
+
+func TestStartupFailsWhenTheDeviceDoesNotAnswer(t *testing.T) {
+	device := newFakeDevice(8, "v1.2.3")
+	device.silentNext = true
+	config := &ServerConfig{SerialDevice: device, Timeout: testTimeout}
+
+	start := time.Now()
+	err := config.getMaxChannels()
+	require.ErrorContains(t, err, "no response from the device")
+	require.Less(t, time.Since(start), 2*time.Second)
+}
+
+func TestTheDefaultTimeoutIsUsedWhenNoneIsSet(t *testing.T) {
+	device := newFakeDevice(8, "v1.2.3")
+	config := &ServerConfig{SerialDevice: device}
+	require.NoError(t, config.getMaxChannels())
+
+	device.silentNext = true
+	start := time.Now()
+	err := config.getDeviceVersion()
+	require.ErrorContains(t, err, fmt.Sprintf("within %s", DefaultTimeout))
+	require.GreaterOrEqual(t, time.Since(start), DefaultTimeout)
 }
