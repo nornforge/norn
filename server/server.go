@@ -187,6 +187,7 @@ func (serv *ServerConfig) writeRelayHandler(w http.ResponseWriter, r *http.Reque
 	if _, err = serv.execute(command); err != nil {
 		replyTextContent(w, r, http.StatusBadRequest, err.Error())
 		fmt.Println(err.Error())
+		return
 	}
 	reply(w, r, http.StatusOK)
 }
@@ -237,7 +238,7 @@ func (serv *ServerConfig) execute(cmd norn.Command) (norn.Response, error) {
 	serv.SerialDevice.Write(cmd.Marshal())
 	reader := bufio.NewReader(serv.SerialDevice)
 	if err := resp.Parse(reader); err != nil {
-		return resp, fmt.Errorf("error while parsing the response from the hardware: %s", resp.Message)
+		return resp, fmt.Errorf("error while parsing the response from the hardware: %w", err)
 	}
 
 	if !resp.Success {
