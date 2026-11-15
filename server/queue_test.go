@@ -37,7 +37,7 @@ func occupyDevice(t *testing.T, server *httptest.Server, device *fakeDevice) <-c
 		defer close(done)
 		resp, err := http.Get(relayURL(server, "1"))
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}()
 	require.Eventually(t, func() bool { return device.numCommands() == before+1 },
