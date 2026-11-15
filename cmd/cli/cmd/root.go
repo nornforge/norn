@@ -71,6 +71,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringP("device", "d", serialDevice, "The serial device used for communication")
+	rootCmd.PersistentFlags().Duration("timeout", defaultTimeout, "How long to wait for the response of the device")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

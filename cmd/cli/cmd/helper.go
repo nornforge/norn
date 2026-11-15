@@ -30,8 +30,14 @@ func sendCommandOverSerial(command norn.Command) (norn.Response, error) {
 		return response, err
 	}
 	defer port.Close()
-	port.Write(command.Marshal())
-	reader := bufio.NewReader(port)
+	timeout, err := rootCmd.PersistentFlags().GetDuration("timeout")
+	if err != nil {
+		return response, err
+	}
+	if _, err := port.Write(command.Marshal()); err != nil {
+		return response, fmt.Errorf("error while sending the command to %s: %w", portName, err)
+	}
+	reader := bufio.NewReader(newTimeoutReader(port, timeout))
 	err = response.Parse(reader)
 	if err != nil {
 		return response, err

@@ -34,7 +34,14 @@ const (
 	Version     CommandType = 3
 	Bootloader  CommandType = 4
 	MaxChannels CommandType = 5
+	// Brightness sets the brightness of the status LED of the device. The
+	// value, from 0 (LED off) to MaxBrightness, is carried in the Channel
+	// field of the command and echoed in the Channel field of the response.
+	Brightness CommandType = 6
 )
+
+// MaxBrightness is the highest value a Brightness command accepts.
+const MaxBrightness = 255
 
 var (
 	crc32c = crc32.MakeTable(crc32.Castagnoli)

@@ -95,3 +95,39 @@ func TestResponse(t *testing.T) {
 	require.Equal(t, response.Message, "Test")
 	require.Equal(t, response.Success, false)
 }
+
+// The command types are part of the wire format shared with the firmware,
+// so their values must never change.
+func TestCommandTypeValues(t *testing.T) {
+	require.Equal(t, norn.CommandType(0), norn.Nil)
+	require.Equal(t, norn.CommandType(1), norn.Get)
+	require.Equal(t, norn.CommandType(2), norn.Set)
+	require.Equal(t, norn.CommandType(3), norn.Version)
+	require.Equal(t, norn.CommandType(4), norn.Bootloader)
+	require.Equal(t, norn.CommandType(5), norn.MaxChannels)
+	require.Equal(t, norn.CommandType(6), norn.Brightness)
+	require.Equal(t, 255, norn.MaxBrightness)
+}
+
+func TestBrightnessCommandRoundTrip(t *testing.T) {
+	for _, brightness := range []uint{0, 16, norn.MaxBrightness} {
+		sent := norn.Command{Type: norn.Brightness, Channel: brightness}
+		data := sent.Marshal()
+		require.Contains(t, string(data), fmt.Sprintf(`{"channel":%d,"type":6,"status":false}`, brightness))
+
+		received := norn.Command{}
+		err := received.Parse(bufio.NewReader(strings.NewReader(string(data))))
+		require.NoError(t, err)
+		require.Equal(t, sent, received)
+	}
+}
+
+// The device echoes the brightness in the channel field of its response.
+func TestBrightnessResponseRoundTrip(t *testing.T) {
+	sent := norn.Response{Success: true, Channel: 16}
+
+	received := norn.Response{}
+	err := received.Parse(bufio.NewReader(strings.NewReader(string(sent.Marshal()))))
+	require.NoError(t, err)
+	require.Equal(t, sent, received)
+}
