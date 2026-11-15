@@ -1,0 +1,2 @@
+ddfc08eccaf29291aef2de33c5f7606e7d84fd358c8d797ccbadae81b48c8307  norn_0.1.4-SNAPSHOT-27412e9_linux_amd64.tar.gz
+834ad9aeea59671ea8152e52f472dae0e79ae6ed1c0e3bb4d997ee81e1a56cef  norn_0.1.4-SNAPSHOT-27412e9_linux_arm64.tar.gz
