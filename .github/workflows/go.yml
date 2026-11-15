@@ -21,10 +21,12 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: 🏗️ Set up Go
+      # Vet and test with the Go version go.mod declares, so the declared
+      # minimum is known to work
+      - name: 🏗️ Set up Go (version from go.mod)
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: '1.27'
+          go-version-file: go.mod
 
       - name: 🧹 Format
         run: test -z "$(gofmt -l . | tee /dev/stderr)"
@@ -34,6 +36,15 @@ jobs:
 
       - name: 🧪 Test
         run: go test -v ./...
+
+      # Releases are built with a current Go, so they carry its fixes
+      - name: 🏗️ Set up Go (release toolchain)
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.27'
+
+      - name: 🧪 Test with the release toolchain
+        run: go test ./...
 
       - name: 🔧 Install syft
         uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
