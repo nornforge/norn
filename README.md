@@ -23,8 +23,28 @@ The firmware can be found in the separate [firmware](https://github.com/nornforg
 ## CLI
 
 ```
-$ go build -o norn ./cmd/norn-cli.go
+$ make all
 ```
+
+builds `norn`, which talks to the device over its USB serial port, and `norn-client`, which talks to a
+running `norn server`.
+
+| Command                   | Effect                                                              |
+| ------------------------- | ------------------------------------------------------------------- |
+| `norn on <channel>`       | switch a relay on                                                   |
+| `norn off <channel>`      | switch a relay off                                                  |
+| `norn get <channel>`      | print the state of a relay, `1` for on and `0` for off              |
+| `norn brightness <0-255>` | set the brightness of the status LED, `0` turns it off              |
+| `norn version`            | print the version of the CLI and of the firmware                    |
+| `norn boot`               | send the device into its bootloader for a firmware update           |
+| `norn list`               | list the serial ports                                               |
+| `norn server`             | serve the relays over the REST API described below                  |
+
+The serial port defaults to `/dev/ttyACM0`. Select another one with `--device` or the environment
+variable `NORN_SERIAL_PORT`.
+
+`norn brightness` needs firmware v0.1.0 or newer. The device does not store the setting: after a restart
+it uses its default again.
 
 ## REST API v1
 
