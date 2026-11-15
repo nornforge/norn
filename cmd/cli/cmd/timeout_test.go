@@ -78,3 +78,52 @@ func TestTimeoutReaderLimitsTheTotalTime(t *testing.T) {
 	require.Error(t, err)
 	require.Less(t, time.Since(start), 2*time.Second)
 }
+
+// blockingReader blocks in Read until it is closed, like a serial port
+// without data.
+type blockingReader struct {
+	closed   chan struct{}
+	returned chan struct{}
+}
+
+func (b *blockingReader) Read(p []byte) (int, error) {
+	defer close(b.returned)
+	<-b.closed
+	return 0, io.ErrClosedPipe
+}
+
+func (b *blockingReader) Close() error {
+	close(b.closed)
+	return nil
+}
+
+func TestTimeoutReaderClosesTheReaderToUnblockThePendingRead(t *testing.T) {
+	blocking := &blockingReader{closed: make(chan struct{}), returned: make(chan struct{})}
+
+	_, err := newTimeoutReader(blocking, 50*time.Millisecond).Read(make([]byte, 8))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no response from the device")
+
+	select {
+	case <-blocking.returned:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the pending Read was left blocked")
+	}
+}
+
+func TestTimeoutReaderDoesNotCloseAReaderThatAnswers(t *testing.T) {
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		pipeWriter.Write([]byte("abc"))
+		pipeWriter.Write([]byte("def"))
+	}()
+
+	reader := newTimeoutReader(pipeReader, 5*time.Second)
+	buffer := make([]byte, 3)
+	_, err := io.ReadFull(reader, buffer)
+	require.NoError(t, err)
+	// A closed pipe would fail the second read
+	_, err = io.ReadFull(reader, buffer)
+	require.NoError(t, err)
+	require.Equal(t, "def", string(buffer))
+}
