@@ -1,11 +1,6 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# Builds and tests the CLI, the client and the release archives
 
 name: 🔨 Build Go
-
-env:
-  VERSION_FROM_GIT: v0.0.1-devel
-  CGO_ENABLED: 0
 
 on:
   push:
@@ -13,42 +8,55 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
 
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-    - name: 🏗️ Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.22'
+      - name: 🏗️ Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.27'
 
-    - name: 🔖 Get the version
-      run: echo "VERSION_FROM_GIT=$(git describe --tags)" >> "$GITHUB_ENV"
+      - name: 🧹 Format
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
 
-    - name: 👷 Build the norn cli
-      run: |
-        go build -o norn \
-                 -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" \
-                 ./cmd/cli
-    - name: 👷 Build the norn client
-      run: |
-        go build -o norn-client \
-                 -ldflags "-X github.com/nornforge/norn/version.VersionInput=$VERSION_FROM_GIT" \
-                 ./cmd/client
+      - name: 🔎 Vet
+        run: go vet ./...
 
-    - name: 🧪 Test
-      run: go test -v ./...
+      - name: 🧪 Test
+        run: go test -v ./...
 
-    - name: ✅ Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: norn-${{env.VERSION_FROM_GIT}}
-        path: |
-          norn
-          norn-client
+      - name: 🔧 Install syft
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+
+      # The same configuration builds the release, so a broken release build shows up here
+      - name: 👷 Build the release archives and SBOMs
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
+        with:
+          version: v2.20.2
+          args: release --snapshot --clean
+
+      - name: 📋 Show the SBOM contents
+        run: |
+          for sbom in dist/*.cdx.json; do
+            echo "== ${sbom}"
+            jq -r '.components[] | select(.type == "library") | "\(.name) \(.version)"' "${sbom}" | sort -u
+          done
+
+      - name: ✅ Upload Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: norn
+          path: |
+            dist/*.tar.gz
+            dist/*.cdx.json
+            dist/*checksums.txt
