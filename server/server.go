@@ -19,10 +19,17 @@ import (
 	"go.bug.st/serial"
 )
 
+// DefaultTimeout is how long the server waits for the response of the device
+// when ServerConfig.Timeout is not set.
+const DefaultTimeout = 2 * time.Second
+
 // A ServerConfig holds all information required to serve the REST API
 type ServerConfig struct {
-	BindAddress   string
-	Port          uint16
+	BindAddress string
+	Port        uint16
+	// Timeout is how long to wait for the response of the device to a
+	// command. Zero means DefaultTimeout.
+	Timeout       time.Duration
 	maxChannel    int
 	deviceVersion versionInfo
 	SerialDevice  serial.Port
@@ -235,10 +242,19 @@ func (serv *ServerConfig) execute(cmd norn.Command) (norn.Response, error) {
 	resp := norn.Response{
 		Success: false,
 	}
+	// A response that arrived after an earlier command timed out would
+	// otherwise be taken as the response to this command.
+	if err := serv.SerialDevice.ResetInputBuffer(); err != nil {
+		return resp, fmt.Errorf("error while clearing the input of the hardware: %w", err)
+	}
 	if _, err := serv.SerialDevice.Write(cmd.Marshal()); err != nil {
 		return resp, fmt.Errorf("error while sending the command to the hardware: %w", err)
 	}
-	reader := bufio.NewReader(serv.SerialDevice)
+	timeout := serv.Timeout
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	reader := bufio.NewReader(newDeadlineReader(serv.SerialDevice, timeout))
 	if err := resp.Parse(reader); err != nil {
 		return resp, fmt.Errorf("error while parsing the response from the hardware: %w", err)
 	}
@@ -247,6 +263,37 @@ func (serv *ServerConfig) execute(cmd norn.Command) (norn.Response, error) {
 		return resp, fmt.Errorf("error while talking to the hardware >  %s", resp.Message)
 	}
 	return resp, nil
+}
+
+// deadlineReader reads from a serial port until a deadline. All reads
+// together have to finish before it, so a device that does not answer, or
+// stops in the middle of a response, does not block the server, and with it
+// all other requests, forever.
+type deadlineReader struct {
+	port     serial.Port
+	timeout  time.Duration
+	deadline time.Time
+}
+
+// newDeadlineReader returns a reader whose deadline is the timeout from now.
+func newDeadlineReader(port serial.Port, timeout time.Duration) *deadlineReader {
+	return &deadlineReader{port: port, timeout: timeout, deadline: time.Now().Add(timeout)}
+}
+
+func (r *deadlineReader) Read(p []byte) (int, error) {
+	for {
+		remaining := time.Until(r.deadline)
+		if remaining <= 0 {
+			return 0, fmt.Errorf("no response from the device within %s", r.timeout)
+		}
+		if err := r.port.SetReadTimeout(remaining); err != nil {
+			return 0, err
+		}
+		// On a timeout the port returns no data and no error.
+		if n, err := r.port.Read(p); n > 0 || err != nil {
+			return n, err
+		}
+	}
 }
 
 // reply creates a http response
