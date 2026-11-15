@@ -37,7 +37,7 @@ func sendCommandOverSerial(command norn.Command) (norn.Response, error) {
 		return response, err
 	}
 	if !response.Success {
-		return response, fmt.Errorf(response.Message)
+		return response, fmt.Errorf("%s", response.Message)
 	}
 	return response, nil
 }

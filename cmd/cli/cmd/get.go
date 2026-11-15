@@ -43,7 +43,7 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		if !response.Success {
-			return fmt.Errorf(response.Message)
+			return fmt.Errorf("%s", response.Message)
 		}
 		status := 0
 		if response.Status {
