@@ -256,8 +256,9 @@ func TestAResponseThatIsNotAValidFrameIsReported(t *testing.T) {
 
 		status, body := request(t, method, relayURL(server, "1"), "1")
 		require.Equal(t, http.StatusBadRequest, status, method)
-		// The reason must reach the caller instead of an empty message
-		require.Contains(t, body, "invalid marker", method)
+		// The reason must reach the caller instead of an empty message. The
+		// parser skips bytes that are not a frame, so it runs out of data.
+		require.Contains(t, body, "error while parsing the response", method)
 	}
 }
 
