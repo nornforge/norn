@@ -104,6 +104,20 @@ The curl command line option `-s` is to suppress the download status information
 
 In case you are satisfied with the results you can run the `norn` server as a systemd service. The details are described in the [docs](doc/systemd.md)
 
+## Releases
+
+Pushing a version tag such as `v1.2.3` runs the tests and publishes a GitHub release with, for
+`linux_amd64` and `linux_arm64`:
+
+- `norn_<version>_linux_<arch>.tar.gz`, holding `norn`, `norn-client` and the systemd unit
+- `norn_<version>_linux_<arch>.tar.gz.cdx.json`, the software bill of materials (SBOM) of that archive in
+  [CycloneDX](https://cyclonedx.org) format
+- `norn_<version>_checksums.txt`, the SHA-256 checksums of all files
+
+Archives and SBOMs carry a signed [build provenance attestation](https://docs.github.com/en/actions/concepts/security/artifact-attestations).
+To check that an archive was built by this repository's release workflow, run
+`gh attestation verify norn_<version>_linux_<arch>.tar.gz --repo nornforge/norn`.
+
 ## License
 
 This software is licensed under the [Apache License Version 2.0](LICENSE)

@@ -2,3 +2,6 @@
 norn
 norn-client
 
+
+# Release artifacts produced by GoReleaser
+dist/
