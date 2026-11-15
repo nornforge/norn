@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
-// fakeServer answers the relay routes of the norn server, which uses the
-// same router, and records the requests that reach them.
+// fakeServer answers the relay routes the way the norn server routes them,
+// with an http.ServeMux, and records the requests that reach them.
 type fakeServer struct {
 	mutex    sync.Mutex
 	requests []string
@@ -25,11 +24,10 @@ type fakeServer struct {
 
 func (f *fakeServer) start(t *testing.T) *httptest.Server {
 	t.Helper()
-	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/relay/{index}/value", func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		f.mutex.Lock()
-		f.requests = append(f.requests, r.Method+" "+mux.Vars(r)["index"]+" "+string(body))
+		f.requests = append(f.requests, r.Method+" "+r.PathValue("index")+" "+string(body))
 		status, reply, delay := f.status, f.reply, f.delay
 		f.mutex.Unlock()
 		time.Sleep(delay)
@@ -38,7 +36,10 @@ func (f *fakeServer) start(t *testing.T) *httptest.Server {
 		}
 		w.WriteHeader(status)
 		_, _ = w.Write([]byte(reply))
-	}).Methods(http.MethodGet, http.MethodPut)
+	}
+	router := http.NewServeMux()
+	router.HandleFunc("GET /api/v1/relay/{index}/value", handler)
+	router.HandleFunc("PUT /api/v1/relay/{index}/value", handler)
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 	return server
