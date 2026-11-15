@@ -209,3 +209,41 @@ func (response *Response) Parse(reader *bufio.Reader) error {
 	}
 	return json.Unmarshal(data, response)
 }
+
+// Answers reports whether the response can be the answer to the command.
+// The protocol carries no request id, but the device echoes the channel of
+// Get, Set and Brightness commands, and only answers Version and MaxChannels
+// with a version and a channel count. A host uses this to skip a response
+// that belongs to an earlier command, for example one that arrived after the
+// host had given up waiting for it.
+//
+// A failed response carries nothing to compare, so it counts as an answer to
+// any command.
+func (response *Response) Answers(command Command) bool {
+	if !response.Success {
+		return true
+	}
+	switch command.Type {
+	case Get, Set, Brightness:
+		return response.Channel == command.Channel && response.MaxChannel == 0 && response.Message == ""
+	case Version:
+		return response.Message != "" && response.MaxChannel == 0
+	case MaxChannels:
+		return response.MaxChannel > 0
+	}
+	return true
+}
+
+// ParseAnswer parses responses from the reader until it finds one that
+// answers the command, skipping responses to earlier commands.
+func (response *Response) ParseAnswer(reader *bufio.Reader, command Command) error {
+	for {
+		*response = Response{}
+		if err := response.Parse(reader); err != nil {
+			return err
+		}
+		if response.Answers(command) {
+			return nil
+		}
+	}
+}
