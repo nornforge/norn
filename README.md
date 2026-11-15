@@ -32,7 +32,7 @@ or does not switch, can endanger people or cause damage. It is not a safety comp
 
 ### Access control is up to the operator
 
-Norn has no authentication and no encryption, neither on the serial port nor in the REST API.
+Norn offers neither authentication nor encryption, on the serial port as well as in the REST API.
 
 - Whoever can write to the serial port can switch every relay and send the device into its bootloader,
   where new firmware can be installed.
