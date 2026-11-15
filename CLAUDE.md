@@ -29,8 +29,9 @@ The version is injected via `-ldflags "-X github.com/nornforge/norn/version.Vers
 
 ## Conventions
 
-- When bumping Go, change the version in `.devcontainer/devcontainer.json` and in `.github/workflows/*.yml`
-  together, so the dev container and CI build with the same toolchain.
+- The dev container (`.devcontainer/devcontainer.json`) and the workflows (`.github/workflows/*.yml`) each
+  name a Go version. They may differ for a while, but aim for the same one: when bumping Go in one place,
+  check the other.
 - A change to the protocol in `pkg/norn` affects the firmware. Add new command types at the end, never
   renumber existing ones, and update the firmware repo to the new norn release afterwards.
 - A connected Pico shows up as `/dev/ttyACM0` inside the dev container; access needs `sudo`
