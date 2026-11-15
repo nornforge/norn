@@ -41,6 +41,11 @@ func serverCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	conf.Timeout, err = rootCmd.PersistentFlags().GetDuration("timeout")
+	if err != nil {
+		return err
+	}
+
 	serialPortName, err := rootCmd.PersistentFlags().GetString("device")
 	if err != nil {
 		return err

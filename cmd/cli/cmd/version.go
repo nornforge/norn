@@ -16,43 +16,19 @@ limitations under the License.
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 
 	"github.com/nornforge/norn/pkg/norn"
 	"github.com/nornforge/norn/version"
 	"github.com/spf13/cobra"
-	"go.bug.st/serial"
 )
 
-func getDeviceVersion(portName string) (string, error) {
-	command := norn.Command{Type: norn.Version}
-	mode := &serial.Mode{
-		BaudRate: 115200,
-		Parity:   serial.NoParity,
-		DataBits: 8,
-		StopBits: serial.OneStopBit,
-	}
-	port, err := serial.Open(portName, mode)
+// getDeviceVersion asks the device for the version of its firmware.
+func getDeviceVersion() (string, error) {
+	response, err := sendCommandOverSerial(norn.Command{Type: norn.Version})
 	if err != nil {
-		return "", fmt.Errorf(
-			"unable to open the serial port: %s",
-			portName,
-		)
-	}
-	defer port.Close()
-	port.Write(command.Marshal())
-	reader := bufio.NewReader(port)
-	response := norn.Response{}
-	err = response.Parse(reader)
-	if err != nil {
-		return "", err
-	}
-
-	if !response.Success {
 		return "", fmt.Errorf("unable to get the version info from the device: %w", err)
 	}
-
 	return response.Message, nil
 }
 
@@ -64,15 +40,9 @@ var versionCmd = &cobra.Command{
 	Short:        "Prints the program version",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		portName, err := rootCmd.PersistentFlags().GetString("device")
-		if err != nil {
-			return err
-		}
-
 		version := version.GetProgramVersion()
 		fmt.Printf("Program Version : v%s\n", version.String())
-		deviceVersion, err := getDeviceVersion(portName)
+		deviceVersion, err := getDeviceVersion()
 		if err != nil {
 			return err
 		}

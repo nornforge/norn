@@ -16,12 +16,14 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/nornforge/norn/pkg/norn"
 	"github.com/spf13/cobra"
 	"go.bug.st/serial"
 )
 
-// versionCmd represents the version command
+// bootCmd represents the boot command
 var bootCmd = &cobra.Command{
 	Use:          "boot",
 	Short:        "Enters the bootloader mode, this is useful for firmware updates",
@@ -43,8 +45,10 @@ var bootCmd = &cobra.Command{
 			return err
 		}
 		defer port.Close()
-		port.Write(command.Marshal())
-
+		// The device does not answer: it restarts into its bootloader.
+		if _, err := port.Write(command.Marshal()); err != nil {
+			return fmt.Errorf("error while sending the command to %s: %w", portName, err)
+		}
 		return nil
 	},
 }
