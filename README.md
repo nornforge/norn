@@ -16,6 +16,32 @@ This pure Go implementation allows one to control the outputs off the [Waveshare
 Sometimes control is needed. This project aims to provide control over the eight relays attached to the Raspberry Pi Pico µC. The project is split into two parts one part is the firmware and the other one is the command line client to set the state from a connected host device.
 
 
+## Intended use
+
+Norn is meant for switching loads in development and test setups, for example the power supply of a
+device under test, from hosts and networks that are trusted.
+
+It is not meant for, and must not be relied on in, applications where a relay that switches unexpectedly,
+or does not switch, can endanger people or cause damage. It is not a safety component:
+
+- The state reported for a relay is the state the firmware last set. The relay contacts are not read back.
+- The electrical limits are those of the relay board; see the
+  [Waveshare Pico Relay B documentation](https://www.waveshare.com/wiki/Pico-Relay-B).
+- How the relays behave on power-up, restart and errors is defined by the firmware and described in the
+  [firmware README](https://github.com/nornforge/firmware#relay-states).
+
+### Access control is up to the operator
+
+Norn has no authentication and no encryption, neither on the serial port nor in the REST API.
+
+- Whoever can write to the serial port can switch every relay and send the device into its bootloader,
+  where new firmware can be installed.
+- Whoever can reach the REST API of `norn server` can switch every relay. Requests are plain HTTP.
+- `norn server` listens on `127.0.0.1` by default, so only programs on the same host reach it. Binding it
+  to another address with `--bind` makes the relays reachable for everything that can connect to that
+  address. Only do that on a network you trust, or put a reverse proxy that authenticates and encrypts
+  in front of it.
+
 ## Firmware
 
 The firmware can be found in the separate [firmware](https://github.com/nornforge/firmware) repository.
