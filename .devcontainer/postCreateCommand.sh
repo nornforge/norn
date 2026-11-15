@@ -37,6 +37,8 @@ case "${ARCH}" in
     *) echo "No checksums known for architecture ${ARCH}" >&2; exit 1 ;;
 esac
 DL_DIR=$(mktemp -d)
+# Remove the downloads again, also when a step below fails
+trap 'rm -rf "${DL_DIR}"' EXIT
 
 # Install GoReleaser
 wget -q -O "${DL_DIR}/goreleaser.tar.gz" \
@@ -45,8 +47,6 @@ echo "${GORELEASER_SHA256}  ${DL_DIR}/goreleaser.tar.gz" | sha256sum -c -
 tar -xzf "${DL_DIR}/goreleaser.tar.gz" -C "${DL_DIR}" goreleaser
 sudo install -m 0755 "${DL_DIR}/goreleaser" /usr/local/bin/goreleaser
 goreleaser --version
-
-rm -rf "${DL_DIR}"
 
 # Generator for new Cobra commands
 go install "github.com/spf13/cobra-cli@v${COBRA_CLI_VERSION}"
