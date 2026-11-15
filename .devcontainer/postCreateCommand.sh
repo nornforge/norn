@@ -9,8 +9,10 @@ GORELEASER_SHA256_ARM64="f0fa989c3531348e8f975aac647eb187a09046f8a34c54e0b79bed6
 
 COBRA_CLI_VERSION="1.3.0"
 
-# The volume holding the GitHub CLI login is created owned by root
-sudo chown -R "$(id -u):$(id -g)" "${HOME}/.config"
+# The volume holding the GitHub CLI login is created owned by root, and so is
+# its parent directory if Docker had to create it for the mount
+sudo chown "$(id -u):$(id -g)" "${HOME}/.config"
+sudo chown -R "$(id -u):$(id -g)" "${HOME}/.config/gh"
 
 # print the Go version and the version of the linter the image ships
 go version
