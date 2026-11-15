@@ -43,6 +43,9 @@ running `norn server`.
 The serial port defaults to `/dev/ttyACM0`. Select another one with `--device` or the environment
 variable `NORN_SERIAL_PORT`.
 
+`norn on`, `off`, `get` and `brightness` give up with an error if the device does not respond within two
+seconds; `--timeout` changes that.
+
 `norn brightness` needs firmware v0.1.0 or newer. The device does not store the setting: after a restart
 it uses its default again.
 
