@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/nornforge/norn/pkg/norn"
 	"github.com/nornforge/norn/version"
 	"go.bug.st/serial"
@@ -67,14 +66,14 @@ type info struct {
 
 const minChannel = 1 // the lowe bound of the output channels
 
-// newMux creats a new http mux and registers the handler funcs
+// newMux creates a new http mux and registers the handler funcs
 func newMux(serv *ServerConfig) http.Handler {
-	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/relay/{index}/value", serv.readRelayHandler).Methods("GET")
-	router.HandleFunc("/api/v1/relay/{index}/value", serv.writeRelayHandler).Methods("PUT")
+	router := http.NewServeMux()
+	router.HandleFunc("GET /api/v1/relay/{index}/value", serv.readRelayHandler)
+	router.HandleFunc("PUT /api/v1/relay/{index}/value", serv.writeRelayHandler)
 
 	// API version v2 aka JSON API
-	router.HandleFunc("/api/v2/info", serv.info).Methods("GET")
+	router.HandleFunc("GET /api/v2/info", serv.info)
 
 	return router
 }
@@ -86,8 +85,7 @@ func (serv *ServerConfig) readRelayHandler(w http.ResponseWriter, r *http.Reques
 	var err error = nil
 	serv.mutex.Lock()
 	defer serv.mutex.Unlock()
-	vars := mux.Vars(r)
-	index := vars["index"]
+	index := r.PathValue("index")
 	if channel, err = serv.getRelayIndex(index); err != nil {
 		replyTextContent(w, r, http.StatusBadRequest, err.Error())
 		fmt.Println(err.Error())
@@ -162,8 +160,7 @@ func (serv *ServerConfig) writeRelayHandler(w http.ResponseWriter, r *http.Reque
 	status := false
 	serv.mutex.Lock()
 	defer serv.mutex.Unlock()
-	vars := mux.Vars(r)
-	index := vars["index"]
+	index := r.PathValue("index")
 
 	if channel, err = serv.getRelayIndex(index); err != nil {
 		replyTextContent(w, r, http.StatusBadRequest, err.Error())
