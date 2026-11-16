@@ -22,6 +22,10 @@ import (
 // when ServerConfig.Timeout is not set.
 const DefaultTimeout = 2 * time.Second
 
+// DefaultQueueTimeout is how long a request waits for the requests ahead of
+// it when ServerConfig.QueueTimeout is not set.
+const DefaultQueueTimeout = 5 * time.Second
+
 // A ServerConfig holds all information required to serve the REST API
 type ServerConfig struct {
 	BindAddress string
@@ -32,7 +36,12 @@ type ServerConfig struct {
 	maxChannel    int
 	deviceVersion versionInfo
 	SerialDevice  serial.Port
-	mutex         sync.Mutex
+	// QueueTimeout is how long a request waits for the device while other
+	// requests use it. Zero means DefaultQueueTimeout.
+	QueueTimeout time.Duration
+	// busy holds a token while a request uses the device
+	busy     chan struct{}
+	busyOnce sync.Once
 }
 
 // A serverInfo contains all information about the server. This is part of the JSON v2 API
@@ -90,14 +99,17 @@ func newMux(serv *ServerConfig) http.Handler {
 func (serv *ServerConfig) readRelayHandler(w http.ResponseWriter, r *http.Request) {
 	var channel int = 0
 	var err error = nil
-	serv.mutex.Lock()
-	defer serv.mutex.Unlock()
 	index := r.PathValue("index")
 	if channel, err = serv.getRelayIndex(index); err != nil {
 		replyTextContent(w, r, http.StatusBadRequest, err.Error())
 		fmt.Println(err.Error())
 		return
 	}
+	// Only once the request is known to be valid, it waits for the device
+	if !serv.acquireDevice(w, r) {
+		return
+	}
+	defer serv.releaseDevice()
 	command := norn.Command{
 		Type:    norn.Get,
 		Channel: uint(channel),
@@ -165,8 +177,6 @@ func (serv *ServerConfig) writeRelayHandler(w http.ResponseWriter, r *http.Reque
 	var channel int = 0
 	var err error = nil
 	status := false
-	serv.mutex.Lock()
-	defer serv.mutex.Unlock()
 	index := r.PathValue("index")
 
 	if channel, err = serv.getRelayIndex(index); err != nil {
@@ -180,6 +190,14 @@ func (serv *ServerConfig) writeRelayHandler(w http.ResponseWriter, r *http.Reque
 		fmt.Println(err.Error())
 		return
 	}
+
+	// Only once the request is known to be valid, and its body has been read,
+	// it waits for the device: net/http notices a client that went away only
+	// after the body was read.
+	if !serv.acquireDevice(w, r) {
+		return
+	}
+	defer serv.releaseDevice()
 
 	fmt.Printf("The index: %d  and the status to set: <%t> \n", channel, status)
 
@@ -293,6 +311,59 @@ func (r *deadlineReader) Read(p []byte) (int, error) {
 	}
 }
 
+// acquireDevice waits until no other request uses the device and reserves
+// it for this request. It gives up when the client goes away, so the command
+// of a request nobody waits for any more is not executed, and after the queue
+// timeout, replying 503. Without that limit, requests piled up behind a
+// device that does not answer would only run after their clients, or the
+// write timeout of the server, gave up.
+//
+// When acquireDevice returns true, the caller must call releaseDevice.
+func (serv *ServerConfig) acquireDevice(w http.ResponseWriter, r *http.Request) bool {
+	serv.busyOnce.Do(func() { serv.busy = make(chan struct{}, 1) })
+	wait := serv.queueTimeout()
+	timer := time.NewTimer(wait)
+	defer timer.Stop()
+
+	select {
+	case serv.busy <- struct{}{}:
+	case <-r.Context().Done():
+		fmt.Printf("%s %s: the client went away while waiting for the device\n", r.Method, r.URL.Path)
+		return false
+	case <-timer.C:
+		message := fmt.Sprintf("the device is busy: other requests used it for more than %s", wait)
+		replyTextContent(w, r, http.StatusServiceUnavailable, message)
+		fmt.Println(message)
+		return false
+	}
+	// Both may have been ready at the same time
+	if r.Context().Err() != nil {
+		serv.releaseDevice()
+		fmt.Printf("%s %s: the client went away while waiting for the device\n", r.Method, r.URL.Path)
+		return false
+	}
+	return true
+}
+
+// releaseDevice frees the device for the next request.
+func (serv *ServerConfig) releaseDevice() {
+	<-serv.busy
+}
+
+func (serv *ServerConfig) queueTimeout() time.Duration {
+	if serv.QueueTimeout <= 0 {
+		return DefaultQueueTimeout
+	}
+	return serv.QueueTimeout
+}
+
+func (serv *ServerConfig) timeout() time.Duration {
+	if serv.Timeout <= 0 {
+		return DefaultTimeout
+	}
+	return serv.Timeout
+}
+
 // reply creates a http response
 // This is a internal helper function
 func reply(w http.ResponseWriter, r *http.Request, status int) {
@@ -318,10 +389,12 @@ func Serve(server *ServerConfig) error {
 		return err
 	}
 	s := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", server.BindAddress, server.Port),
-		Handler:      newMux(server),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:        fmt.Sprintf("%s:%d", server.BindAddress, server.Port),
+		Handler:     newMux(server),
+		ReadTimeout: 10 * time.Second,
+		// A request may wait in the queue and then for the device; the
+		// response must still get through after that.
+		WriteTimeout: server.queueTimeout() + server.timeout() + 5*time.Second,
 	}
 	return s.ListenAndServe()
 }
