@@ -31,6 +31,17 @@ jobs:
       - name: 🧹 Format
         run: test -z "$(gofmt -l . | tee /dev/stderr)"
 
+      - name: 🐚 Shellcheck
+        run: shellcheck scripts/install.sh
+
+      # Installs the latest published release, so a change of the release
+      # assets that breaks the script shows up here
+      - name: 📥 Install script
+        run: |
+          sh scripts/install.sh --prefix "${RUNNER_TEMP}/norn"
+          "${RUNNER_TEMP}/norn/bin/norn" --help >/dev/null
+          "${RUNNER_TEMP}/norn/bin/norn-client" --help >/dev/null
+
       - name: 🔎 Vet
         run: go vet ./...
 

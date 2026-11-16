@@ -26,7 +26,6 @@ const DefaultTimeout = 2 * time.Second
 // DefaultQueueTimeout is how long a request waits for the requests ahead of
 // it when ServerConfig.QueueTimeout is not set.
 const DefaultQueueTimeout = 5 * time.Second
-
 // A ServerConfig holds all information required to serve the REST API
 type ServerConfig struct {
 	BindAddress string
@@ -366,7 +365,6 @@ func (serv *ServerConfig) timeout() time.Duration {
 	}
 	return serv.Timeout
 }
-
 // reply creates a http response
 // This is a internal helper function
 func reply(w http.ResponseWriter, r *http.Request, status int) {

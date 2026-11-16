@@ -46,6 +46,29 @@ Norn offers neither authentication nor encryption, on the serial port as well as
 
 The firmware can be found in the separate [firmware](https://github.com/nornforge/firmware) repository.
 
+## Installation
+
+On Linux (amd64 or arm64), the install script downloads the latest release, checks it against the checksums
+of the release and installs `norn` and `norn-client` to `/usr/local/bin`, using `sudo` where needed:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nornforge/norn/main/scripts/install.sh | sh
+```
+
+It also installs the bash completion of both programs. Options go after `sh -s --`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nornforge/norn/main/scripts/install.sh | sh -s -- --version v0.2.0 --prefix ~/.local
+```
+
+| Option             | Effect                                                          |
+| ------------------ | --------------------------------------------------------------- |
+| `--version <tag>`  | install this release instead of the latest one                  |
+| `--prefix <dir>`   | install to `<dir>/bin` instead of `/usr/local/bin`              |
+| `--no-completion`  | skip the bash completion                                        |
+
+To run `norn server` as a service, see [the systemd documentation](doc/systemd.md).
+
 ## CLI
 
 ```
