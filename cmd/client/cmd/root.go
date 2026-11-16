@@ -30,7 +30,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// serialDevice represents the serial port used by the NORN application.
+// nornServerURL is the default URL of the norn server.
 var nornServerURL = getEnv("NORN_URL", "http://localhost:8080")
 
 // rootCmd represents the base command when called without any subcommands
@@ -59,6 +59,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().String("url", nornServerURL, "The URL of the norn server")
+	rootCmd.PersistentFlags().Duration("timeout", defaultTimeout, "How long to wait for the response of the server")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

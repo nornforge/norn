@@ -33,9 +33,7 @@ var cycleCmd = &cobra.Command{
 	SilenceUsage: true,
 	Args:         cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var err error
-		delay := defaultDelay
-		remoteURL, err := rootCmd.PersistentFlags().GetString("url")
+		remote, err := newRemoteFromFlags()
 		if err != nil {
 			return err
 		}
@@ -45,28 +43,25 @@ var cycleCmd = &cobra.Command{
 			return err
 		}
 
-		if delay, err = cmd.Flags().GetUint8("delay"); err != nil {
+		delay, err := cmd.Flags().GetUint8("delay")
+		if err != nil {
 			return err
 		}
 
-		remote := NewRemote(remoteURL)
-		if err = remote.Off(uint(channel)); err != nil {
-			return fmt.Errorf(
-				"unable to turn off the channel %d on the remote end: %s",
-				channel,
-				remoteURL,
-			)
-		}
-		time.Sleep(time.Duration(delay) * time.Second)
-		if err = remote.On(uint(channel)); err != nil {
-			return fmt.Errorf(
-				"unable to turn on the channel %d on the remote end: %s",
-				channel,
-				remoteURL,
-			)
-		}
-		return nil
+		return cycle(remote, uint(channel), time.Duration(delay)*time.Second)
 	},
+}
+
+// cycle turns the channel off, waits for the delay and turns it on again.
+func cycle(remote *Remote, channel uint, delay time.Duration) error {
+	if err := remote.Off(channel); err != nil {
+		return fmt.Errorf("unable to turn off the channel %d on %s: %w", channel, remote.url, err)
+	}
+	time.Sleep(delay)
+	if err := remote.On(channel); err != nil {
+		return fmt.Errorf("unable to turn on the channel %d on %s: %w", channel, remote.url, err)
+	}
+	return nil
 }
 
 func init() {

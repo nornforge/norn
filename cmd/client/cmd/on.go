@@ -28,8 +28,7 @@ var onCommand = &cobra.Command{
 	Args:         cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		remoteURL, err := rootCmd.PersistentFlags().GetString("url")
+		remote, err := newRemoteFromFlags()
 		if err != nil {
 			return err
 		}
@@ -38,8 +37,6 @@ var onCommand = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		remote := NewRemote(remoteURL)
 
 		return remote.On(uint(channel))
 	},
