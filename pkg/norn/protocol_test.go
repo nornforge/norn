@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/nornforge/norn/pkg/norn"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetCommand(t *testing.T) {

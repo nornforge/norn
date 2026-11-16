@@ -82,3 +82,26 @@ jobs:
             dist/*.tar.gz
             dist/*.cdx.json
             dist/*checksums.txt
+
+  # The firmware builds pkg/norn with TinyGo. Run its tests with TinyGo and
+  # build them for the Pico, so a change that breaks the firmware build
+  # shows up here and not only after a release.
+  tinygo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Go and TinyGo versions as in the firmware repository
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27'
+      - uses: acifani/setup-tinygo@f51bf108c9895381060398804ce6cf6f62692106 # v3.0.1
+        with:
+          tinygo-version: '0.44.0'
+          install-binaryen: 'false'
+
+      - name: 🧪 Test pkg/norn with TinyGo
+        run: tinygo test -v ./pkg/norn
+
+      - name: 👷 Build pkg/norn for the Pico
+        run: tinygo test -c -o "${RUNNER_TEMP}/norn_test.elf" -target=pico ./pkg/norn

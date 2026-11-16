@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/nornforge/norn/pkg/norn"
-	"github.com/stretchr/testify/require"
 )
 
 // The responses the firmware sends, from v0.0.1 on, to each command type.
