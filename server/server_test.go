@@ -41,6 +41,9 @@ type fakeDevice struct {
 	// is kept in late until deliverLate is called.
 	silentNext bool
 	late       []byte
+	// strayNext is sent right before the response to the next command, like
+	// a response to an earlier command that arrives late.
+	strayNext []byte
 	// cutNext makes the device send only the first half of its next response.
 	cutNext     bool
 	readTimeout time.Duration
@@ -72,6 +75,8 @@ func (d *fakeDevice) Write(p []byte) (int, error) {
 	}
 	handled := d.handle(command)
 	response := handled.Marshal()
+	d.output.Write(d.strayNext)
+	d.strayNext = nil
 	switch {
 	case d.silentNext:
 		d.silentNext = false
@@ -486,4 +491,25 @@ func TestTheDefaultTimeoutIsUsedWhenNoneIsSet(t *testing.T) {
 	err := config.getDeviceVersion()
 	require.ErrorContains(t, err, fmt.Sprintf("within %s", DefaultTimeout))
 	require.GreaterOrEqual(t, time.Since(start), DefaultTimeout)
+}
+
+// A response to an earlier command that arrives after the input was cleared,
+// right before the real response, is skipped.
+func TestAResponseToAnEarlierCommandIsSkipped(t *testing.T) {
+	device := newFakeDevice(8, "v1.2.3")
+	server := startServer(t, device)
+	stray := norn.Response{Success: true, Channel: 2, Status: true}
+
+	device.mutex.Lock()
+	device.strayNext = stray.Marshal()
+	device.mutex.Unlock()
+	status, body := request(t, http.MethodGet, relayURL(server, "1"), "")
+	require.Equal(t, http.StatusOK, status)
+	require.Equal(t, "0", body)
+
+	device.mutex.Lock()
+	device.strayNext = stray.Marshal()
+	device.mutex.Unlock()
+	status, body = request(t, http.MethodGet, server.URL+"/api/v2/info", "")
+	require.Equal(t, http.StatusOK, status, body)
 }

@@ -270,7 +270,9 @@ func (serv *ServerConfig) execute(cmd norn.Command) (norn.Response, error) {
 		timeout = DefaultTimeout
 	}
 	reader := bufio.NewReader(newDeadlineReader(serv.SerialDevice, timeout))
-	if err := resp.Parse(reader); err != nil {
+	// A response to an earlier command can still arrive after the input was
+	// cleared; it is skipped.
+	if err := resp.ParseAnswer(reader, cmd); err != nil {
 		return resp, fmt.Errorf("error while parsing the response from the hardware: %w", err)
 	}
 
