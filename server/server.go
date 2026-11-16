@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/nornforge/norn/pkg/norn"
 	"github.com/nornforge/norn/version"
 	"go.bug.st/serial"
@@ -63,6 +64,18 @@ type versionInfo struct {
 	PreRelease string `json:"prerelease"`
 	MetaData   string `json:"metadata"`
 	String     string `json:"string"`
+}
+
+// newVersionInfo converts a semantic version into its JSON representation.
+func newVersionInfo(version *semver.Version) versionInfo {
+	return versionInfo{
+		Major:      version.Major(),
+		Minor:      version.Minor(),
+		Patch:      version.Patch(),
+		PreRelease: version.Prerelease(),
+		MetaData:   version.Metadata(),
+		String:     version.String(),
+	}
 }
 
 // A channelInfo contains all information about the device output channels.
@@ -131,21 +144,10 @@ func (serv *ServerConfig) info(w http.ResponseWriter, r *http.Request) {
 	version := version.GetProgramVersion()
 	response := info{
 		Server: serverInfo{
-			Version: versionInfo{
-				Major:      version.Major(),
-				Minor:      version.Minor(),
-				Patch:      version.Patch(),
-				MetaData:   version.Metadata(),
-				PreRelease: version.Prerelease(),
-				String:     version.String(),
-			},
+			Version: newVersionInfo(version),
 		},
 		Device: deviceInfo{
-			Version: versionInfo{
-				Major: serv.deviceVersion.Major,
-				Minor: serv.deviceVersion.Minor,
-				Patch: serv.deviceVersion.Patch,
-			},
+			Version: serv.deviceVersion,
 		},
 		Channels: channelInfo{
 			Max: uint(serv.maxChannel),
@@ -412,12 +414,14 @@ func (serv *ServerConfig) getDeviceVersion() error {
 	if err != nil {
 		return err
 	}
-	fmt.Sscanf(response.Message,
-		"v%d.%d.%d",
-		&serv.deviceVersion.Major,
-		&serv.deviceVersion.Minor,
-		&serv.deviceVersion.Patch,
-	)
+	deviceVersion, err := semver.NewVersion(response.Message)
+	if err != nil {
+		// Not a semantic version: keep what the device sent, so it is
+		// still visible, and leave the numbers at zero.
+		serv.deviceVersion = versionInfo{String: response.Message}
+		return nil
+	}
+	serv.deviceVersion = newVersionInfo(deviceVersion)
 	return nil
 }
 

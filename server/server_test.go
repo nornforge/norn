@@ -358,11 +358,29 @@ func TestInfo(t *testing.T) {
 
 	var got info
 	require.NoError(t, json.Unmarshal([]byte(body), &got))
-	require.Equal(t, uint64(1), got.Device.Version.Major)
-	require.Equal(t, uint64(2), got.Device.Version.Minor)
-	require.Equal(t, uint64(3), got.Device.Version.Patch)
+	require.Equal(t, versionInfo{Major: 1, Minor: 2, Patch: 3, String: "1.2.3"}, got.Device.Version)
 	require.Equal(t, uint(1), got.Channels.Min)
 	require.Equal(t, uint(4), got.Channels.Max)
+}
+
+// A firmware built from a branch reports a pre-release, such as
+// v0.1.0-resync. It must not be cut off after the patch number.
+func TestInfoWithADevicePreRelease(t *testing.T) {
+	server := startServer(t, newFakeDevice(8, "v0.1.0-resync+build.7"))
+
+	status, body := request(t, http.MethodGet, server.URL+"/api/v2/info", "")
+	require.Equal(t, http.StatusOK, status)
+
+	var got info
+	require.NoError(t, json.Unmarshal([]byte(body), &got))
+	require.Equal(t, versionInfo{
+		Major:      0,
+		Minor:      1,
+		Patch:      0,
+		PreRelease: "resync",
+		MetaData:   "build.7",
+		String:     "0.1.0-resync+build.7",
+	}, got.Device.Version)
 }
 
 func TestInfoWithADeviceVersionThatIsNotASemanticVersion(t *testing.T) {
@@ -373,7 +391,7 @@ func TestInfoWithADeviceVersionThatIsNotASemanticVersion(t *testing.T) {
 
 	var got info
 	require.NoError(t, json.Unmarshal([]byte(body), &got))
-	require.Equal(t, uint64(0), got.Device.Version.Major)
+	require.Equal(t, versionInfo{String: "development build"}, got.Device.Version)
 	require.Equal(t, uint(8), got.Channels.Max)
 }
 

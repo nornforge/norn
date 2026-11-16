@@ -155,16 +155,22 @@ curl -s http://127.0.0.1:8080/api/v2/info | jq
 {
   "server": {
     "version": {
-      "major": 2,
-      "minor": 0,
-      "patch": 1
+      "major": 0,
+      "minor": 3,
+      "patch": 0,
+      "prerelease": "",
+      "metadata": "",
+      "string": "0.3.0"
     }
   },
   "device": {
     "version": {
-      "major": 1,
-      "minor": 2,
-      "patch": 0
+      "major": 0,
+      "minor": 1,
+      "patch": 0,
+      "prerelease": "",
+      "metadata": "",
+      "string": "0.1.0"
     }
   },
   "channels": {
@@ -174,6 +180,8 @@ curl -s http://127.0.0.1:8080/api/v2/info | jq
 }
 ```
 The curl command line option `-s` is to suppress the download status information. We also pipe the output to jq for a better readability.
+
+If the firmware reports a version that is not a semantic version, the numbers are `0` and `string` holds the version as the device sent it.
 
 
 ## Systemd activation
